@@ -15,7 +15,9 @@ int main(int argc, const char * argv[])
 {
     @autoreleasepool {
         // Fetch file contents
-        NSString *fileRoot = [[NSBundle mainBundle] pathForResource:@"5" ofType:@"txt"];
+        NSString *fileRoot = [[NSBundle mainBundle] pathForResource:@"sample" ofType:@"txt"];
+        
+        
         NSString *contents = [NSString stringWithContentsOfFile:fileRoot encoding:NSUTF8StringEncoding error:nil];
         NSArray *lines = [contents componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
         
@@ -43,9 +45,9 @@ int main(int argc, const char * argv[])
                 } else if (currentPosition[@"y"] < nextPosition[@"y"]) {
                     [answerString appendString:@"S"];
                 } else if (currentPosition[@"z"] > nextPosition[@"z"]) {
-                    [answerString appendString:@"U"];
-                } else if (currentPosition[@"z"] < nextPosition[@"z"]) {
                     [answerString appendString:@"D"];
+                } else if (currentPosition[@"z"] < nextPosition[@"z"]) {
+                    [answerString appendString:@"U"];
                 }
             }
         }
@@ -62,7 +64,7 @@ int main(int argc, const char * argv[])
 
 void parseInput(NSArray *inputArray, NSMutableArray *layers, NSMutableDictionary *mazeData) {
     int depth = 0;
-    NSUInteger layerSize = 0;
+    NSUInteger layerWidth = 0;
     NSUInteger currentLine = 0;
     NSMutableArray *currentLayer = [NSMutableArray new];
     
@@ -75,14 +77,15 @@ void parseInput(NSArray *inputArray, NSMutableArray *layers, NSMutableDictionary
         if ([line isEqualToString:@""]) {
             // Empty line or end of file means we are moving on
             [layers addObject:currentLayer];
-            currentLayer = [NSMutableArray arrayWithCapacity:layerSize];
+            currentLayer = [NSMutableArray new];
             depth++;
+            mazeData[@"layerHeight"] = [NSNumber numberWithInteger:currentLine];
             currentLine = 0;
         } else {
-            layerSize = line.length;
-            mazeData[@"layerSize"] = [NSNumber numberWithInteger:layerSize];
+            layerWidth = line.length;
+            mazeData[@"layerWidth"] = [NSNumber numberWithInteger:layerWidth];
             
-            currentLayer[currentLine] = [NSMutableArray arrayWithCapacity:layerSize];
+            [currentLayer addObject:[NSMutableArray arrayWithCapacity:layerWidth]];
             
             for (NSInteger j = 0; j < line.length; j++) {
                 unichar currentChar = [line characterAtIndex:j];
@@ -119,8 +122,7 @@ void parseInput(NSArray *inputArray, NSMutableArray *layers, NSMutableDictionary
                 [currentLayer[currentLine] addObject:positionData];
             }
             
-            // Keep our currentline bound to layerSize
-            currentLine = (currentLine + 1) % layerSize;
+            currentLine++;
         }
     }
     
@@ -129,7 +131,8 @@ void parseInput(NSArray *inputArray, NSMutableArray *layers, NSMutableDictionary
 
 NSArray *solveMaze(NSDictionary *startingPosition, NSMutableArray *layers, NSDictionary *mazeData) {
     bool found = false;
-    int layerSize = [mazeData[@"layerSize"] intValue];
+    int layerWidth = [mazeData[@"layerWidth"] intValue];
+    int layerHeight = [mazeData[@"layerHeight"] intValue];
     int height = [mazeData[@"height"] intValue];
     
     // Our BFS queue
@@ -162,7 +165,7 @@ NSArray *solveMaze(NSDictionary *startingPosition, NSMutableArray *layers, NSDic
                 [surroundingPositions addObject:layers[currentZ][currentY - 1][currentX]];
             }
             
-            if (currentY < layerSize - 1) {
+            if (currentY < layerHeight - 1) {
                 [surroundingPositions addObject:layers[currentZ][currentY + 1][currentX]];
             }
             
@@ -170,7 +173,7 @@ NSArray *solveMaze(NSDictionary *startingPosition, NSMutableArray *layers, NSDic
                 [surroundingPositions addObject:layers[currentZ][currentY][currentX - 1]];
             }
             
-            if (currentX < layerSize - 1) {
+            if (currentX < layerWidth - 1) {
                 [surroundingPositions addObject:layers[currentZ][currentY][currentX + 1]];
             }
             
